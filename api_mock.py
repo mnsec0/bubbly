@@ -68,5 +68,5 @@ def deleteNote():
         return "Not found"
 
 if __name__ == "__main__":
-    app.run(port=5010)
+    app.run(host="0.0.0.0", port=5010)
 
