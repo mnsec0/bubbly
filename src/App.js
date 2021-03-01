@@ -6,34 +6,34 @@ import * as B from 'react-bootstrap';
 const axios = require('axios').default;
 
 function getNotes() {
-    return axios.get('http://127.0.0.1:5010/getNotes')
+    return axios.get('http://192.168.68.109:5010/getNotes')
         .then(function(response) { return response.data; })
         .catch(function(error) { console.log(error); });
 }
 
 function getNote(id) {
-    return axios.post('http://127.0.0.1:5010/getNote',
+    return axios.post('http://192.168.68.109:5010/getNote',
         {'noteid': id})
         .then(function(response) { return response.data; })
         .catch(function(error) { console.log(error); });
 }
 
 function updateNote(id, title, content) {
-    return axios.post('http://127.0.0.1:5010/updateNote',
+    return axios.post('http://192.168.68.109:5010/updateNote',
         {'noteid': id, 'title': title, 'content': content})
         .then(function(response) { return response.data; })
         .catch(function(error) { console.log(error) });
 }
 
 function createNote(title, content) {
-    return axios.post('http://127.0.0.1:5010/createNote',
+    return axios.post('http://192.168.68.109:5010/createNote',
         {'title': title, 'content': content})
         .then(function(response) { return response.data; })
         .catch(function(error) { console.log(error); });
 }
 
 function deleteNote(id) {
-    return axios.post('http://127.0.0.1:5010/deleteNote',
+    return axios.post('http://192.168.68.109:5010/deleteNote',
         {'noteid': id})
         .then(function(response) { return response.data; })
         .catch(function(error) { console.log(error); });
