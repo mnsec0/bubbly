@@ -1,20 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Switch, Route, Link, Redirect } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import * as B from 'react-bootstrap';
+import date from 'date-and-time';
 
 const axios = require('axios').default;
 
 function getNotes() {
     return axios.get('http://192.168.68.109:5010/getNotes')
-        .then(function(response) { return response.data; })
-        .catch(function(error) { console.log(error); });
-}
-
-function getNote(id) {
-    return axios.post('http://192.168.68.109:5010/getNote',
-        {'noteid': id})
-        .then(function(response) { return response.data; })
+        .then(function(response) {
+            const result = response.data;
+            result.sort((a,b) => date.parse(b.lastModifiedDate, "YYYY-MM-DD hh:mm:ss") - date.parse(a.lastModifiedDate, "YYYY-MM-DD hh:mm:ss"));
+            return result;
+        })
         .catch(function(error) { console.log(error); });
 }
 
@@ -39,165 +36,130 @@ function deleteNote(id) {
         .catch(function(error) { console.log(error); });
 }
 
-function AllNotes(props) {
+function App() {
     const [notes, setNotes] = useState([]);
+    const [editingNoteId, setEditingNoteId] = useState(null);
+    const [newNoteTitle, setNewNoteTitle] = useState(null);
+    const [newNoteContent, setNewNoteContent] = useState(null);
+    const refNoteTitle = useRef();
+    const refNoteContent = useRef();
+    const [activeTab, setActiveTab] = useState("#newnote");
     useEffect(() => {
         getNotes().then(function(result) { setNotes(result); });
     }, []);
     return (
-        <B.Row className="mt-3">
-            <B.Col>
-                <ul className="list-group list-group-flush">
-                    {notes.map(n => (
-                        <li key={n.noteid} className="list-group-item">
-                            <h2><Link to={"/note/"+n.noteid}>{n.title}</Link></h2>
-                        </li>
-                    ))}
-                </ul>
-            </B.Col>
-        </B.Row>
-    );
-}
-
-function GetNote(props) {
-    const id = props.match.params.id;
-    const [note, setNote] = useState(null);
-
-    useEffect(() => {
-        getNote(id).then(function(result) { setNote(result); });
-    }, [id]);
-    if(note) {
-        return (
-            <B.Row className="mt-3">
-                <B.Col>
-                    <B.Jumbotron>
-                        <h1>{note.title}</h1>
-                        <p className="lead">Updated {note.lastModifiedDate}</p>
-                    </B.Jumbotron>
-                    <ReactMarkdown>{note.content}</ReactMarkdown>
-                </B.Col>
-            </B.Row>
-        );
-    } else {
-        return null;
-    }
-}
-
-function CreateNote(props) {
-    const [title, setTitle] = useState(null);
-    const [content, setContent] = useState(null);
-    const [saved, setSaved] = useState(false);
-    const [noteid, setNoteid] = useState(null);
-    if(saved && noteid) {
-        return (<Redirect to={"/note/"+noteid}/>);
-    } else {
-        return (
-            <B.Row className="mt-3">
-                <B.Col>
-                    <B.Form>
-                        <B.Form.Group>
-                            <B.Form.Control type="text" size="lg" onChange={(e) => setTitle(e.target.value)}/>
-                        </B.Form.Group>
-                        <B.Form.Group>
-                            <B.Form.Control style={{fontFamily: "monospace"}} as="textarea" rows={20} onChange={(e) => setContent(e.target.value)}>
-                            </B.Form.Control>
-                        </B.Form.Group>
-                        <B.Button onClick={() => { if(title && title !== "") { createNote(title, content).then(function(noteid) { setSaved(true); setNoteid(noteid); })}}}>Save</B.Button>
-                    </B.Form>
-                </B.Col>
-            </B.Row>
-        );
-    }
-}
-
-function EditNote(props) {
-    const id = props.match.params.id;
-    const [note, setNote] = useState(null);
-    const [title, setTitle] = useState(null);
-    const [content, setContent] = useState(null);
-    const [saved, setSaved] = useState(false);
-    useEffect(() => {
-        getNote(id).then(function(result) {
-            setNote(result);
-            setTitle(result.title);
-            setContent(result.content);
-        });
-    }, [id]);
-    if(saved) {
-        return (<Redirect to={"/note/"+id}/>);
-    } else {
-        if(note) {
-            return (
-                <B.Row className="mt-3">
-                    <B.Col>
-                        <B.Form>
-                            <B.Form.Group>
-                                <B.Form.Control type="text" size="lg" defaultValue={note.title} onChange={(e) => setTitle(e.target.value)}/>
-                            </B.Form.Group>
-                            <B.Form.Group>
-                                <B.Form.Control style={{fontFamily: "monospace"}} as="textarea" rows={20} onChange={(e) => setContent(e.target.value)}>
-                                    {note.content}
-                                </B.Form.Control>
-                            </B.Form.Group>
-                            <B.Button onClick={() => { if(title !== "") { updateNote(id, title, content); setSaved(true); }}}>Save</B.Button>
-                        </B.Form>
-                    </B.Col>
-                </B.Row>
-            );
-        } else {
-            return null;
-        }
-    }
-}
-
-function DeleteNote(props) {
-    deleteNote(props.match.params.id);
-    return (<Redirect to="/"/>);
-}
-
-function DeleteEditButtons(props) {
-    const noteid = props.match.params.id;
-    return (
-        <>
-            <Link to={"/delete/"+noteid}>
-                <B.Button className="ml-3" variant="danger">Delete this note</B.Button>
-            </Link>
-            <Link to={"/edit/"+noteid}>
-                <B.Button className="ml-3" variant="secondary">Edit this note</B.Button>
-            </Link>
-        </>
-    );
-}
-
-function CreateNoteButton(props) {
-    return (<Link to={"/createNote"}><B.Button>Create note</B.Button></Link>)
-}
-
-function App() {
-    return (
         <div className="container">
-            <Router>
-                <B.Navbar bg="light" expand="lg">
-                    <Link to="/" component={B.Navbar.Brand}>Bubbly</Link>
-                    <B.Navbar.Toggle aria-controls="basic-navbar-nav" />
-                    <B.Navbar.Collapse id="basic-navbar-nav">
-                        <B.Nav className="mr-auto">
-                            <Link to="/" component={B.Nav.Link}>Home</Link>
-                        </B.Nav>
-                        <CreateNoteButton/>
-                        <Switch>
-                            <Route path="/note/:id" component={DeleteEditButtons}/>
-                        </Switch>
-                    </B.Navbar.Collapse>
-                </B.Navbar>
-                <Switch>
-                    <Route path="/note/:id" component={GetNote}/>
-                    <Route path="/edit/:id" component={EditNote}/>
-                    <Route path="/delete/:id" component={DeleteNote}/>
-                    <Route path="/createNote" component={CreateNote}/>
-                    <Route path="/" component={AllNotes}/>
-                </Switch>
-            </Router>
+            <div className="mt-3">
+                <B.Tab.Container id="notes-tabs" activeKey={activeTab} onSelect={k => setActiveTab(k)}>
+                    <B.Row>
+                        <B.Col xs={4}>
+                            <img src="/bubbly.png" width={200} className="my-1"/>
+                            <B.ListGroup>
+                                <B.ListGroup.Item action href="#newnote">
+                                    {editingNoteId ? "Edit Note" : "New Note"}
+                                </B.ListGroup.Item>
+                                {notes.map(n => (
+                                    <B.ListGroup.Item action href={"#note_"+n.noteid} key={n.noteid}>
+                                        {n.title}
+                                    </B.ListGroup.Item>
+                                ))}
+                            </B.ListGroup>
+                        </B.Col>
+                        <B.Col xs={8} className="pt-3">
+                            <B.Tab.Content>
+                                <B.Tab.Pane eventKey="#newnote">
+                                    <B.Form>
+                                        <B.Form.Group>
+                                            <B.Form.Control ref={refNoteTitle} type="text" size="lg"
+                                                onChange={(e) => setNewNoteTitle(e.target.value)}/>
+                                        </B.Form.Group>
+                                        <B.Form.Group>
+                                            <B.Form.Control ref={refNoteContent} style={{fontFamily: "monospace"}}
+                                                as="textarea" rows={20}
+                                                onChange={(e) => setNewNoteContent(e.target.value)}>
+                                            </B.Form.Control>
+                                        </B.Form.Group>
+                                        <B.Button variant="secondary"
+                                            onClick={() => {
+                                                if(editingNoteId) {
+                                                    setActiveTab("#note_"+editingNoteId);
+                                                }
+                                                setEditingNoteId(null);
+                                                setNewNoteTitle(null);
+                                                setNewNoteContent(null);
+                                                refNoteTitle.current.value = null;
+                                                refNoteContent.current.value = null;
+                                            }}>
+                                            Cancel
+                                        </B.Button>
+                                    <B.Button className="ml-3"
+                                        onClick={() => { if(newNoteTitle && newNoteTitle !== "") {
+                                            if(editingNoteId) {
+                                                updateNote(editingNoteId, newNoteTitle, newNoteContent).then(() =>
+                                                    getNotes().then(function(result) {
+                                                        setNotes(result);
+                                                        setActiveTab("#note_"+editingNoteId);
+                                                        setEditingNoteId(null);
+                                                        setNewNoteTitle(null);
+                                                        setNewNoteContent(null);
+                                                        refNoteTitle.current.value = null;
+                                                        refNoteContent.current.value = null;
+                                                    }))
+                                            } else {
+                                                createNote(newNoteTitle, newNoteContent).then(function(noteid) {
+                                                    getNotes().then(function(result) {
+                                                        setActiveTab("#note_"+noteid);
+                                                        setNotes(result);
+                                                        setNewNoteTitle(null);
+                                                        setNewNoteContent(null);
+                                                        refNoteTitle.current.value = null;
+                                                        refNoteContent.current.value = null;
+                                                    }); })}}}}>
+                                        {editingNoteId ? "Save" : "Create"}
+                                    </B.Button>
+                                    </B.Form>
+                                    <B.Card className="mt-3">
+                                        <B.Card.Header>Preview</B.Card.Header>
+                                        <B.Card.Body>
+                                            <h1>{newNoteTitle}</h1>
+                                            <ReactMarkdown>{newNoteContent}</ReactMarkdown>
+                                        </B.Card.Body>
+                                    </B.Card>
+                                </B.Tab.Pane>
+                                {notes.map(n => (
+                                    <B.Tab.Pane eventKey={"#note_"+n.noteid} key={n.noteid}>
+                                        <div>
+                                            <h1>{n.title}</h1>
+                                            <ReactMarkdown>{n.content}</ReactMarkdown>
+                                            <p>Updated {n.lastModifiedDate}</p>
+                                            <B.Button variant="secondary"
+                                                onClick={() => {
+                                                    setActiveTab("#newnote");
+                                                    setEditingNoteId(n.noteid);
+                                                    setNewNoteTitle(n.title);
+                                                    setNewNoteContent(n.content);
+                                                    refNoteTitle.current.value = n.title;
+                                                    refNoteContent.current.value = n.content;
+                                                }}>
+                                                Edit this note
+                                            </B.Button>
+                                            <B.Button className="ml-3" variant="danger"
+                                                onClick={() => deleteNote(n.noteid)
+                                                        .then(() => getNotes()
+                                                            .then(result => {
+                                                                setActiveTab("#newnote");
+                                                                setNotes(result);
+                                                            }))}>
+                                                Delete this note
+                                            </B.Button>
+                                        </div>
+                                    </B.Tab.Pane>
+                                ))}
+                            </B.Tab.Content>
+                        </B.Col>
+                    </B.Row>
+                </B.Tab.Container>
+            </div>
         </div>
     );
 }
