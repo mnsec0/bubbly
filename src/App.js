@@ -6,7 +6,7 @@ import date from 'date-and-time';
 const axios = require('axios').default;
 
 function getNotes() {
-    return axios.get('http://192.168.68.109:5010/getNotes')
+    return axios.get('https://4k6u411he7.execute-api.us-east-1.amazonaws.com/getNotes')
         .then(function(response) {
             const result = response.data;
             result.sort((a,b) => date.parse(b.lastModifiedDate, "YYYY-MM-DD hh:mm:ss") - date.parse(a.lastModifiedDate, "YYYY-MM-DD hh:mm:ss"));
@@ -16,21 +16,21 @@ function getNotes() {
 }
 
 function updateNote(id, title, content) {
-    return axios.post('http://192.168.68.109:5010/updateNote',
+    return axios.post('https://4k6u411he7.execute-api.us-east-1.amazonaws.com/updateNote',
         {'noteid': id, 'title': title, 'content': content})
         .then(function(response) { return response.data; })
         .catch(function(error) { console.log(error) });
 }
 
 function createNote(title, content) {
-    return axios.post('http://192.168.68.109:5010/createNote',
+    return axios.post('https://4k6u411he7.execute-api.us-east-1.amazonaws.com/createNote',
         {'title': title, 'content': content})
         .then(function(response) { return response.data; })
         .catch(function(error) { console.log(error); });
 }
 
 function deleteNote(id) {
-    return axios.post('http://192.168.68.109:5010/deleteNote',
+    return axios.post('https://4k6u411he7.execute-api.us-east-1.amazonaws.com/deleteNote',
         {'noteid': id})
         .then(function(response) { return response.data; })
         .catch(function(error) { console.log(error); });
